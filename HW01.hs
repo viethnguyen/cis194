@@ -55,4 +55,15 @@ hanoi 0 a b c = []
 hanoi n a b c = (hanoi (n - 1) a c b) ++ [(a,b)] ++ (hanoi (n-1) c b a) 
 
 -- Exercise 7: The Tower of Hanoi, with four pegs 
-hanoi :: Integer -> Peg -> Peg -> Peg -> Peg -> [Move]
+hanoi4 :: Integer -> Peg -> Peg -> Peg -> Peg -> [Move]
+hanoi4 0 a b c d = []
+hanoi4 1 a b c d = [(a,b)]
+hanoi4 n a b c d = (hanoi4 (n-2) a d b c) ++ [(a,c), (a,b), (c,b)] ++ (hanoi4 (n-2) d b a c)
+
+hanoi4' :: Integer -> Peg -> Peg -> Peg -> Peg -> [Move]
+hanoi4' 0 a b c d = []
+hanoi4' 1 a b c d = [(a,b)]
+hanoi4' 2 a b c d = [(a,c), (a,b), (c,b)]
+hanoi4' n a b c d = (hanoi4' (n-3) a d b c) ++ 
+                    [(a,b), (a,c), (b,c), (a,b), (c,a), (c,b), (a,b)] ++ 
+                    (hanoi4' (n-3) d b a c)
