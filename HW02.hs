@@ -1,8 +1,5 @@
 {-
-Name: <your name here>
-Collaborators: <your collaborators here, or "none">
-Notes: <any particular notes about your work -- what you struggled with,
-        what's not working, what's really cool, etc.>
+Name: Viet Nguyen
 -}
 
 module HW02 where
@@ -60,3 +57,22 @@ bestWords words = filter (\word -> scrabbleValueWord word == maxWords words) wor
 
 maxWords :: [String] -> Int
 maxWords words = foldl (max) 0 (map scrabbleValueWord words)
+
+scrabbleValueTemplate :: STemplate -> String -> Int
+scrabbleValueTemplate t w = a * b 
+    where a = multiplyWordBy t
+          b = multiplyEachLetter t w
+
+multiplyEachLetter :: STemplate -> String -> Int
+multiplyEachLetter [] [] = 0
+multiplyEachLetter (t:ts) (w:ws) 
+    | t == 'D' = (2 * (scrabbleValue w)) + (multiplyEachLetter ts ws)
+    | t == 'T' = (3 * (scrabbleValue w)) + (multiplyEachLetter ts ws)
+    | otherwise = (scrabbleValue w) + (multiplyEachLetter ts ws)
+
+multiplyWordBy :: STemplate -> Int
+multiplyWordBy [] = 1
+multiplyWordBy (t:ts) 
+    | t == '2' = 2 * multiplyWordBy ts
+    | t == '3' = 3 * multiplyWordBy ts
+    | otherwise = multiplyWordBy ts
