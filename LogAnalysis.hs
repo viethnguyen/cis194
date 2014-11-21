@@ -2,6 +2,7 @@
 module LogAnalysis where
 
 import Log 
+import Data.List (sortBy)
 
 parseMessage :: String -> MaybeLogMessage
 parseMessage s = case (head ws) of
@@ -19,4 +20,30 @@ parseMessage s = case (head ws) of
                  where ws = words s
 
 validMessageOnly :: [MaybeLogMessage] -> [LogMessage]
-validMessageOnly = filter ()
+validMessageOnly [] = []
+validMessageOnly (x:xs) = case x of 
+    InvalidLM s -> validMessageOnly xs
+    ValidLM lm -> lm : validMessageOnly xs
+
+parse :: String -> [LogMessage]
+parse s = validMessageOnly (map parseMessage $ lines s)
+
+compareMsgs :: LogMessage -> LogMessage -> Ordering
+compareMsgs lm1 lm2 
+    | time1 > time2 = GT 
+    | time1 == time2 = EQ 
+    | time1 < time2 = LT 
+    where time1 = getTimeStamp lm1
+          time2 = getTimeStamp lm2
+
+getTimeStamp :: LogMessage -> Int
+getTimeStamp (LogMessage msgType msgTime msgText) = msgTime
+
+
+
+sortMessages :: [LogMessage] -> [LogMessage]
+sortMessages msgs = sortBy compareMsgs msgs 
+
+whatWentWrong :: [LogMessage] -> [String]
+whatWentWrong msgs = 
+    where severeMsgs = filter (\msg -> getTimeStamp msg > )
