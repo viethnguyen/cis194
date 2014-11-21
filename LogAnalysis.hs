@@ -2,7 +2,8 @@
 module LogAnalysis where
 
 import Log 
-import Data.List (sortBy)
+import Data.List (sortBy, isInfixOf)
+import Data.Char (toUpper)
 
 parseMessage :: String -> MaybeLogMessage
 parseMessage s = case (head ws) of
@@ -22,7 +23,7 @@ parseMessage s = case (head ws) of
 validMessageOnly :: [MaybeLogMessage] -> [LogMessage]
 validMessageOnly [] = []
 validMessageOnly (x:xs) = case x of 
-    InvalidLM s -> validMessageOnly xs
+    InvalidLM _ -> validMessageOnly xs
     ValidLM lm -> lm : validMessageOnly xs
 
 parse :: String -> [LogMessage]
@@ -32,18 +33,42 @@ compareMsgs :: LogMessage -> LogMessage -> Ordering
 compareMsgs lm1 lm2 
     | time1 > time2 = GT 
     | time1 == time2 = EQ 
-    | time1 < time2 = LT 
+    | otherwise = LT 
     where time1 = getTimeStamp lm1
           time2 = getTimeStamp lm2
 
 getTimeStamp :: LogMessage -> Int
-getTimeStamp (LogMessage msgType msgTime msgText) = msgTime
+getTimeStamp (LogMessage _ msgTime _) = msgTime
 
-
+getMsgText :: LogMessage -> String
+getMsgText (LogMessage _ _ msgText) = msgText
 
 sortMessages :: [LogMessage] -> [LogMessage]
 sortMessages msgs = sortBy compareMsgs msgs 
 
+
 whatWentWrong :: [LogMessage] -> [String]
-whatWentWrong msgs = 
-    where severeMsgs = filter (\msg -> getTimeStamp msg > )
+whatWentWrong msgs = map getMsgText $ sortMessages (severeMsgsFilter msgs)
+    where severeMsgsFilter ms = filter severeErrorMsgOnly ms
+          severeErrorMsgOnly msg = case msg of
+            LogMessage (Error severeLvl) _ _ -> if severeLvl >= 50 
+                                                    then True
+                                                    else False
+            _ -> False  
+
+messagesAbout :: String -> [LogMessage] -> [LogMessage]
+messagesAbout text lms = filter mentionedOnly lms
+    where mentionedOnly msg = (map toUpper text) `isInfixOf` (map toUpper (getMsgText msg))
+
+whatWentWrongEnhanced :: String -> [LogMessage] -> [String]
+whatWentWrongEnhanced text msgs = map getMsgText $ sortMessages (filter errorAndMentioned msgs)
+    where errorAndMentioned = (|||) mentionedOnly severeErrorMsgOnly
+          mentionedOnly msg = (map toUpper text) `isInfixOf` (map toUpper (getMsgText msg))  
+          severeErrorMsgOnly msg = case msg of
+            LogMessage (Error severeLvl) _ _ -> if severeLvl >= 50 
+                                                    then True
+                                                    else False
+            _ -> False  
+
+(|||) :: (LogMessage -> Bool) -> (LogMessage -> Bool) -> LogMessage -> Bool
+(|||) f g x = f x || g x
