@@ -63,3 +63,6 @@ safeTail (_:xs) = Just xs
 -- This function chains several built-in functions together to form a one-line solution
 allCaps :: [String] -> Bool 
 allCaps words = foldl (&&) True (map (\s -> isUpper(fromMaybe 'a' (safeHead s)) ) words)
+
+dropTrailingWhitespace :: String -> String 
+dropTrailingWhitespace s = 
