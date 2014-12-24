@@ -88,7 +88,21 @@ boolParsingWorks = parse "True" == Just (True, "") &&
                    parseRing "False * False" == Just(False)
 
 -- Exercise 5
-distribute :: Ring a => RingExpr a -> a 
-distribute Mul x (Add y z) = Add (Mul x y) (Mul x z)
-distribute Mul (Add x y) z = Add (Mul x z) (Mul y z)
-distribute m  = eval m   
+swapIdentities :: RingExpr a -> RingExpr a 
+swapIdentities AddId = MulId 
+swapIdentities MulId = AddId 
+-- need other cases to do this *everywhere* in the expression: 
+swapIdentities (Lit a) = Lit a 
+swapIdentities (AddInv x) = AddInv (swapIdentities x)
+swapIdentities (Add x y) = Add (swapIdentities x) (swapIdentities y)
+swapIdentities (Mul x y) = Mul (swapIdentities x) (swapIdentities y)
+
+distribute :: Ring a => RingExpr a -> RingExpr a
+distribute (Mul x (Add y z)) = Add (Mul x y) (Mul x z) 
+distribute (Mul (Add x y) z) = Add (Mul x z) (Mul y z)
+--test 
+distributeWorks :: Bool 
+distributeWorks = (eval $ distribute  (Mul (Lit 1) (Add (Lit 2) (Lit 3))) :: Integer)  == 5 &&
+                (eval $ distribute (Mul (Lit True) (Add (Lit False) (Lit True))) :: Bool) == True &&
+                (eval $ distribute (Mul (Add (Lit (MkMod 2)) (Lit(MkMod 3))) (Lit (MkMod 4))) :: Mod5) == MkMod 0
+
