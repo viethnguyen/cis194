@@ -83,9 +83,9 @@ xor _ _ = False
 boolParsingWorks :: Bool
 boolParsingWorks = parse "True" == Just (True, "") &&
                    parse "False" == Just (False, "") &&
-                   parseRing "True + False" == Just (True) && 
-                   parseRing "True * False" == Just (False) && 
-                   parseRing "False * False" == Just(False)
+                   parseRing "True + False" == Just True && 
+                   parseRing "True * False" == Just False && 
+                   parseRing "False * False" == Just False
 
 -- Exercise 5
 swapIdentities :: RingExpr a -> RingExpr a 
@@ -100,9 +100,33 @@ swapIdentities (Mul x y) = Mul (swapIdentities x) (swapIdentities y)
 distribute :: Ring a => RingExpr a -> RingExpr a
 distribute (Mul x (Add y z)) = Add (Mul x y) (Mul x z) 
 distribute (Mul (Add x y) z) = Add (Mul x z) (Mul y z)
+distribute AddId = AddId 
+distribute MulId = MulId 
+distribute (Lit a) = Lit a 
+distribute (AddInv x) = AddInv (distribute x) 
+distribute (Add x y) = Add (distribute x) (distribute y)
+distribute (Mul x y) = Mul (distribute x) (distribute y)
+
 --test 
 distributeWorks :: Bool 
-distributeWorks = (eval $ distribute  (Mul (Lit 1) (Add (Lit 2) (Lit 3))) :: Integer)  == 5 &&
-                (eval $ distribute (Mul (Lit True) (Add (Lit False) (Lit True))) :: Bool) == True &&
-                (eval $ distribute (Mul (Add (Lit (MkMod 2)) (Lit(MkMod 3))) (Lit (MkMod 4))) :: Mod5) == MkMod 0
+distributeWorks = fmap distribute (parseRing "2 * (1 +2)" :: Maybe (RingExpr Integer)) 
+                    == fmap distribute (parseRing "2 * 1 + 2 *2" :: Maybe (RingExpr Integer)) && 
+                  fmap distribute (parseRing "(3 + 4) * 5" :: Maybe (RingExpr Integer))
+                    == fmap distribute (parseRing "3 * 5 + 4 * 5" :: Maybe (RingExpr Integer))
 
+-- Exercise 6
+squashMulId :: Ring a => RingExpr a -> RingExpr a
+squashMulId (Mul MulId x) =   x 
+squashMulId (Mul x MulId) = x
+-- need other cases to do this *everywhere* in the expression
+squashMulId (AddId) = AddId 
+squashMulId (MulId) = MulId 
+squashMulId (Lit a) = Lit a 
+squashMulId (AddInv x) = AddInv (squashMulId x)
+squashMulId (Add x y) = Add (squashMulId x) (squashMulId y)
+squashMulId (Mul x y) = Mul (squashMulId x) (squashMulId y)
+
+-- test - STILL NOT PASSED!
+squashWorks :: Bool 
+squashWorks = fmap squashMulId (parseRing "(3+4) * 1" :: Maybe (RingExpr Integer)) 
+                == fmap squashMulId (parseRing "3 + 4" :: Maybe (RingExpr Integer))
