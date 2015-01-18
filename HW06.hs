@@ -78,4 +78,9 @@ search mk_m text mkts = go mkts
 
 -- Exercise 7 
 firstFound :: Searcher (Maybe Market)
+firstFound text mkts = search fi text mkts
+    where fi m = Just m 
 
+instance Monoid Market where 
+    mempty = Nothing 
+    mappend m1 m2 = m1 
