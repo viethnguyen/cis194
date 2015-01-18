@@ -27,4 +27,22 @@ streamToList (Cons x s) = x : streamToList s
 
 -- Exercise 4 
 instance Show a => Show (Stream a) where 
-    show s = take 20 (streamToList s)
+    show s = show $ take 20 (streamToList s)
+
+-- Exercise 5 
+streamRepeat :: a -> Stream a 
+streamRepeat x = Cons x (streamRepeat x)
+
+streamMap :: (a->b) -> Stream a -> Stream b
+streamMap f (Cons x s) = Cons (f x) (streamMap f s)
+
+streamFromSeed :: (a->a) -> a -> Stream a 
+streamFromSeed f x = Cons x (streamMap f (streamFromSeed f x))
+
+-- to test, try this: 
+-- show (streamFromSeed ('x':) "o")
+-- show (streamRepeat "o")
+-- show (streamMap (+ 1) (streamRepeat 0))
+
+
+
