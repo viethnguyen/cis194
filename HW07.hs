@@ -47,7 +47,7 @@ streamFromSeed f x = Cons x (streamMap f (streamFromSeed f x))
 -- show (streamRepeat "o")
 -- show (streamMap (+ 1) (streamRepeat 0))
 
--- Exercise 6 - not done yet
+-- Exercise 6 
 nats :: Stream Integer
 nats = streamFromSeed (+ 1) 0 
 
