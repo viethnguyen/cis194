@@ -34,3 +34,6 @@ type DieRoll = Int
 
 dieRoll :: StdRand DieRoll 
 dieRoll = getRandomR (1, 6)
+
+-- Exercise 4 
+battleResults :: [DieRoll] -> [DieRoll] -> ArmyCounts
