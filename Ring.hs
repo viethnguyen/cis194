@@ -8,7 +8,9 @@ module Ring where
  -- useful for documentation, and to avoid name clashes between modules.
 import Control.Arrow ( first )
 import Data.Maybe    ( listToMaybe )
+import Data.List     ( stripPrefix )
 
+-- Definition for rings
 class Ring a where
   addId  :: a            -- additive identity
   addInv :: a -> a       -- additive inverse
@@ -24,6 +26,18 @@ class Parsable a where
   -- was parsed
   parse :: String -> Maybe (a, String)
 
+-- | Use the 'parse' method to parse all of a string, requiring that there
+-- are no leftovers.
+parseAll :: Parsable a => String -> Maybe a
+parseAll str = do   -- using the Maybe monad
+  (result, "") <- parse str
+  return result
+
+instance Parsable Integer where
+  parse = listToMaybe . reads
+    -- Look up these functions online. Think about why this combination works.
+    -- (It should work for any member of the `Read` class. Like `Integer`.)
+
 -- The canonical instance for integers:
 instance Ring Integer where
   addId  = 0
@@ -33,36 +47,67 @@ instance Ring Integer where
   add = (+)
   mul = (*)
 
-instance Parsable Integer where
-  parse = listToMaybe . reads
-    -- Look up these functions online. Think about why this combination works.
-    -- (It should work for any member of the `Read` class. Like `Integer`.)
-
--- | A datatype for storing and manipulating ring expressions.
-data RingExpr a = Lit a
-                | AddId
-                | AddInv (RingExpr a)
-                | MulId
-                | Add (RingExpr a) (RingExpr a)
-                | Mul (RingExpr a) (RingExpr a)
+-- Numbers modulo 5:
+data Mod5 = MkMod Integer
   deriving (Show, Eq)
 
-instance Ring (RingExpr a) where
-  addId  = AddId
-  addInv = AddInv
-  mulId  = MulId
+unMod :: Mod5 -> Integer
+unMod (MkMod n) = n
 
-  add = Add
-  mul = Mul
+mkMod :: Integer -> Mod5
+mkMod = MkMod . (`mod` 5)
 
-instance Parsable a => Parsable (RingExpr a) where
-  parse = fmap (first Lit) . parse
+instance Ring Mod5 where
+  addId  = mkMod 0
+  addInv = mkMod . negate . unMod
+  mulId  = mkMod 1
 
--- | Evaluate a 'RingExpr a' using the ring algebra of 'a'.
-eval :: Ring a => RingExpr a -> a
-eval (Lit a)    = a
-eval AddId      = addId
-eval (AddInv x) = addInv (eval x)
-eval MulId      = mulId
-eval (Add x y)  = add (eval x) (eval y)
-eval (Mul x y)  = mul (eval x) (eval y)
+  add x y = mkMod (unMod x + unMod y)
+  mul x y = mkMod (unMod x * unMod y)
+
+instance Parsable Mod5 where
+  parse str = do (n, rest) <- parse str
+                 return (mkMod n, rest)
+
+-- 2x2 matrices
+data Mat2x2 = MkMat Integer Integer Integer Integer
+  deriving (Show, Eq)
+
+instance Ring Mat2x2 where
+  addId  = MkMat 0 0 0 0
+  addInv (MkMat a b c d) = MkMat (negate a) (negate b) (negate c) (negate d)
+  mulId  = MkMat 1 0 0 1
+
+  add (MkMat a1 b1 c1 d1) (MkMat a2 b2 c2 d2)
+    = MkMat (a1 + a2) (b1 + b2) (c1 + c2) (d1 + d2)
+
+  mul (MkMat a1 b1 c1 d1) (MkMat a2 b2 c2 d2)
+    = MkMat (a1 * a2 + b1 * c2)
+            (a1 * b2 + b1 * d2)
+            (c1 * a2 + d1 * c2)
+            (c1 * b2 + d1 * d2)
+
+instance Parsable Mat2x2 where
+  parse str = do
+    str      <- stripPrefix "[[" str
+    (a, str) <- parse str
+    str      <- stripPrefix ","  str
+    (b, str) <- parse str
+    str      <- stripPrefix "][" str
+    (c, str) <- parse str
+    str      <- stripPrefix ","  str
+    (d, str) <- parse str
+    str      <- stripPrefix "]]" str
+    return (MkMat a b c d, str)
+
+-- Boolean algebra
+instance Ring Bool where
+  addId  = False
+  addInv = not
+  mulId  = True
+
+  add = (||)
+  mul = (&&)
+
+instance Parsable Bool where
+  parse = listToMaybe . reads
